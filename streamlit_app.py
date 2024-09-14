@@ -1,172 +1,84 @@
 import datetime
-import random
-
-import altair as alt
-import numpy as np
-import pandas as pd
 import streamlit as st
+import pandas as pd
+import altair as alt
 
-# Show app title and description.
-st.set_page_config(page_title="Support tickets", page_icon="🎫")
-st.title("🎫 Support tickets")
-st.write(
-    """
-    This app shows how you can build an internal tool in Streamlit. Here, we are 
-    implementing a support ticket workflow. The user can create a ticket, edit 
-    existing tickets, and view some statistics.
-    """
-)
+# Language selection
+language = st.sidebar.selectbox("Select Language / 言語を選択", ["English", "日本語"])
 
-# Create a random Pandas dataframe with existing tickets.
-if "df" not in st.session_state:
+# Initialize session state for gene, usage, and analysis dataframes
+if "gene_df" not in st.session_state:
+    st.session_state.gene_df = pd.DataFrame(columns=["遺伝子ID", "遺伝子名", "配列", "機能", "登録日"])
 
-    # Set seed for reproducibility.
-    np.random.seed(42)
+if "usage_df" not in st.session_state:
+    st.session_state.usage_df = pd.DataFrame(columns=["使用ID", "遺伝子ID", "実験日", "目的", "環境"])
 
-    # Make up some fake issue descriptions.
-    issue_descriptions = [
-        "Network connectivity issues in the office",
-        "Software application crashing on startup",
-        "Printer not responding to print commands",
-        "Email server downtime",
-        "Data backup failure",
-        "Login authentication problems",
-        "Website performance degradation",
-        "Security vulnerability identified",
-        "Hardware malfunction in the server room",
-        "Employee unable to access shared files",
-        "Database connection failure",
-        "Mobile application not syncing data",
-        "VoIP phone system issues",
-        "VPN connection problems for remote employees",
-        "System updates causing compatibility issues",
-        "File server running out of storage space",
-        "Intrusion detection system alerts",
-        "Inventory management system errors",
-        "Customer data not loading in CRM",
-        "Collaboration tool not sending notifications",
-    ]
+if "analysis_df" not in st.session_state:
+    st.session_state.analysis_df = pd.DataFrame(columns=["解析ID", "遺伝子ID", "解析日", "運動パターン", "スコア"])
 
-    # Generate the dataframe with 100 rows/tickets.
-    data = {
-        "ID": [f"TICKET-{i}" for i in range(1100, 1000, -1)],
-        "Issue": np.random.choice(issue_descriptions, size=100),
-        "Status": np.random.choice(["Open", "In Progress", "Closed"], size=100),
-        "Priority": np.random.choice(["High", "Medium", "Low"], size=100),
-        "Date Submitted": [
-            datetime.date(2023, 6, 1) + datetime.timedelta(days=random.randint(0, 182))
-            for _ in range(100)
-        ],
-    }
-    df = pd.DataFrame(data)
-
-    # Save the dataframe in session state (a dictionary-like object that persists across
-    # page runs). This ensures our data is persisted when the app updates.
-    st.session_state.df = df
-
-
-# Show a section to add a new ticket.
-st.header("Add a ticket")
-
-# We're adding tickets via an `st.form` and some input widgets. If widgets are used
-# in a form, the app will only rerun once the submit button is pressed.
-with st.form("add_ticket_form"):
-    issue = st.text_area("Describe the issue")
-    priority = st.selectbox("Priority", ["High", "Medium", "Low"])
-    submitted = st.form_submit_button("Submit")
-
-if submitted:
-    # Make a dataframe for the new ticket and append it to the dataframe in session
-    # state.
-    recent_ticket_number = int(max(st.session_state.df.ID).split("-")[1])
-    today = datetime.datetime.now().strftime("%m-%d-%Y")
-    df_new = pd.DataFrame(
-        [
+# Content in English or Japanese based on selection
+if language == "English":
+    st.title("Zebrafish Gene Database")
+    
+    # Add a new gene
+    st.header("Add a new gene")
+    with st.form("add_gene_form"):
+        gene_name = st.text_input("Gene Name")
+        sequence = st.text_area("Gene Sequence")
+        function = st.text_area("Gene Function")
+        submitted = st.form_submit_button("Submit")
+    
+    if submitted:
+        gene_id = f"GENE-{len(st.session_state.gene_df) + 1}"
+        new_gene = pd.DataFrame(
             {
-                "ID": f"TICKET-{recent_ticket_number+1}",
-                "Issue": issue,
-                "Status": "Open",
-                "Priority": priority,
-                "Date Submitted": today,
+                "遺伝子ID": [gene_id],
+                "遺伝子名": [gene_name],
+                "配列": [sequence],
+                "機能": [function],
+                "登録日": [datetime.date.today().strftime("%Y-%m-%d")]
             }
-        ]
-    )
+        )
+        st.session_state.gene_df = pd.concat([new_gene, st.session_state.gene_df], ignore_index=True)
+        st.success(f"Gene '{gene_name}' added successfully!")
 
-    # Show a little success message.
-    st.write("Ticket submitted! Here are the ticket details:")
-    st.dataframe(df_new, use_container_width=True, hide_index=True)
-    st.session_state.df = pd.concat([df_new, st.session_state.df], axis=0)
+elif language == "日本語":
+    #st.title("ゼブラフィッシュ\n遺伝子データベース")  # 改行を追加
+    st.markdown("<h1 style='font-size: 40px;'>ゼブラフィッシュ</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='font-size: 40px;'>遺伝子データベース</h1>", unsafe_allow_html=True)
+   
+    # 新しい遺伝子を追加
+    st.header("新しい遺伝子を追加")
+    with st.form("add_gene_form"):
+        gene_name = st.text_input("遺伝子名")
+        sequence = st.text_area("遺伝子配列")
+        function = st.text_area("遺伝子の機能")
+        submitted = st.form_submit_button("送信")
+    
+    if submitted:
+        gene_id = f"GENE-{len(st.session_state.gene_df) + 1}"
+        new_gene = pd.DataFrame(
+            {
+                "遺伝子ID": [gene_id],
+                "遺伝子名": [gene_name],
+                "配列": [sequence],
+                "機能": [function],
+                "登録日": [datetime.date.today().strftime("%Y-%m-%d")]
+            }
+        )
+        st.session_state.gene_df = pd.concat([new_gene, st.session_state.gene_df], ignore_index=True)
+        st.success(f"遺伝子 '{gene_name}' が正常に追加されました！")
 
-# Show section to view and edit existing tickets in a table.
-st.header("Existing tickets")
-st.write(f"Number of tickets: `{len(st.session_state.df)}`")
+# CSVファイルのアップロードによるデータ入力
+st.header("CSVファイルから遺伝子データをアップロード" if language == "日本語" else "Upload gene data from CSV file")
+uploaded_file = st.file_uploader("CSVファイルを選択" if language == "日本語" else "Select a CSV file", type=["csv"])
 
-st.info(
-    "You can edit the tickets by double clicking on a cell. Note how the plots below "
-    "update automatically! You can also sort the table by clicking on the column headers.",
-    icon="✍️",
-)
 
-# Show the tickets dataframe with `st.data_editor`. This lets the user edit the table
-# cells. The edited data is returned as a new dataframe.
-edited_df = st.data_editor(
-    st.session_state.df,
-    use_container_width=True,
-    hide_index=True,
-    column_config={
-        "Status": st.column_config.SelectboxColumn(
-            "Status",
-            help="Ticket status",
-            options=["Open", "In Progress", "Closed"],
-            required=True,
-        ),
-        "Priority": st.column_config.SelectboxColumn(
-            "Priority",
-            help="Priority",
-            options=["High", "Medium", "Low"],
-            required=True,
-        ),
-    },
-    # Disable editing the ID and Date Submitted columns.
-    disabled=["ID", "Date Submitted"],
-)
+if uploaded_file:
+    uploaded_df = pd.read_csv(uploaded_file)
+    st.session_state.gene_df = pd.concat([st.session_state.gene_df, uploaded_df], ignore_index=True)
+    st.success("CSVデータが正常にアップロードされました！")
 
-# Show some metrics and charts about the ticket.
-st.header("Statistics")
-
-# Show metrics side by side using `st.columns` and `st.metric`.
-col1, col2, col3 = st.columns(3)
-num_open_tickets = len(st.session_state.df[st.session_state.df.Status == "Open"])
-col1.metric(label="Number of open tickets", value=num_open_tickets, delta=10)
-col2.metric(label="First response time (hours)", value=5.2, delta=-1.5)
-col3.metric(label="Average resolution time (hours)", value=16, delta=2)
-
-# Show two Altair charts using `st.altair_chart`.
-st.write("")
-st.write("##### Ticket status per month")
-status_plot = (
-    alt.Chart(edited_df)
-    .mark_bar()
-    .encode(
-        x="month(Date Submitted):O",
-        y="count():Q",
-        xOffset="Status:N",
-        color="Status:N",
-    )
-    .configure_legend(
-        orient="bottom", titleFontSize=14, labelFontSize=14, titlePadding=5
-    )
-)
-st.altair_chart(status_plot, use_container_width=True, theme="streamlit")
-
-st.write("##### Current ticket priorities")
-priority_plot = (
-    alt.Chart(edited_df)
-    .mark_arc()
-    .encode(theta="count():Q", color="Priority:N")
-    .properties(height=300)
-    .configure_legend(
-        orient="bottom", titleFontSize=14, labelFontSize=14, titlePadding=5
-    )
-)
-st.altair_chart(priority_plot, use_container_width=True, theme="streamlit")
+# Display dataframes
+st.header("遺伝子情報" if language == "日本語" else "Gene Information")
+st.dataframe(st.session_state.gene_df)
